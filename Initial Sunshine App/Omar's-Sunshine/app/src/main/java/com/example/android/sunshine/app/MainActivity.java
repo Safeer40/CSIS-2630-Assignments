@@ -1,5 +1,6 @@
 package com.example.android.sunshine.app;
 
+import android.net.Uri;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
@@ -11,12 +12,24 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 
 public class MainActivity extends ActionBarActivity {
+
+
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +40,9 @@ public class MainActivity extends ActionBarActivity {
                     .add(R.id.container, new PlaceholderFragment())
                     .commit();
         }
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     @Override
@@ -52,6 +68,42 @@ public class MainActivity extends ActionBarActivity {
     }
 
     /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("Main Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        AppIndex.AppIndexApi.start(client, getIndexApiAction());
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.end(client, getIndexApiAction());
+        client.disconnect();
+    }
+
+    /**
      * A placeholder fragment containing a simple view.
      */
     public static class PlaceholderFragment extends Fragment {
@@ -64,36 +116,30 @@ public class MainActivity extends ActionBarActivity {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-
-            // Create some dummy data for the ListView, here is a sample weekly forecast
+            // Create some dummy data for the ListView, Here is a sample weekly forecast
             String[] data = {
-
-                    "Mon 1/1 - Sunny - 31/17",
-                    "Tus 1/2 - Fuggy - 21/8",
-                    "Wed 1/3 - Cloud - 22/18",
-                    "Thurs 1/4 - Sunny 20/18",
-                    "Fri 1/5 - Rainy - 19/10",
-                    "Sat 1/6 - Cloud - 20/16",
-                    "Sun 1/7 - Fuggy - 30/11"
+                    "Mon   01/01 - Sunny -  31/17",
+                    "Tues  01/02 - Cloudy - 22/32",
+                    "Wed   01/03 - Rainy -  23/18",
+                    "Thurs 01/04 - Foggy -  32/11",
+                    "Sat   01/05 - Sunny -  28/17",
+                    "Sun   01/06 - Rainy -  23/18"
             };
 
             List<String> weekForecast = new ArrayList<String>(Arrays.asList(data));
 
             mForecastAdapter =
                     new ArrayAdapter<String>(
-                            getActivity(), // The current context (this activity)
-                          R.layout.list_item_forecast,  // The name of the layout ID.
-                          R.id.list_item_forecast_textview,   // The ID of textview to populate.
+                            getActivity(), // The current context (this activity).
+                            R.layout.list_item_forecast, // The name of the layout ID.
+                            R.id.list_item_forecast_textview, // The ID of the textview to populate.
                             weekForecast);
 
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-            // Get a reference to the ListView, and attach this adapter to it.
-            ListView ListView = (ListView) rootView.findViewById(R.id.Listview_forecast);
-            ListView.setAdapter(mForecastAdapter);
-
-
-
+            // Get a reference tp the ListView, and attach this adapter to it.
+            ListView listView = (ListView) rootView.findViewById(R.id.Listview_forecast);
+            listView.setAdapter(mForecastAdapter);
             return rootView;
         }
     }
