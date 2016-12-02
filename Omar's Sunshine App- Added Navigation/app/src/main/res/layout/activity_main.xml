@@ -8,4 +8,4 @@
     tools:ignore="MergeRootFrame"
     android:textColor="?attr/colorPrimaryDark"
     tools:textSize="24sp"
-    tools:foreground="@color/common_google_signin_btn_text_light_default" />
+    android:background="@drawable/weather_background" />

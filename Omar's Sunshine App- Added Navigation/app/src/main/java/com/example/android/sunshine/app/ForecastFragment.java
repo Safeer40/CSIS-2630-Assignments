@@ -1,8 +1,11 @@
 package com.example.android.sunshine.app;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -12,6 +15,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -27,12 +31,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
-/**
- * Encapsulates fetching the forecast and displaying it as a {@link ListView} layout.
- */
+
 public class ForecastFragment extends Fragment {
 
     private ArrayAdapter<String> mForecastAdapter;
@@ -60,8 +60,7 @@ public class ForecastFragment extends Fragment {
         int id = item.getItemId();
 
         if (id == R.id.action_refresh) {
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("84111");
+            updateWeather();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -71,28 +70,15 @@ public class ForecastFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        // Create some dummy data for the ListView.  Here's a sample weekly forecast
-        String[] data = {
-                "Mon 06/01 - Sunny - 31/17",
-                "Tue 06/02 - Foggy - 21/8",
-                "Wed 06/03 - Cloudy - 22/17",
-                "Thurs 06/04 - Rainy - 18/11",
-                "Fri 06/05 - Foggy - 21/10",
-                "Sat 06/06 - Cloudy - 23/18",
-                "Sun 06/07 - Sunny - 20/7"
-        };
+       // Add ArrayAdapter will take data from a source and use it
+       // to populate the ListView it's attached to.
 
-        List<String> weekForecast = new ArrayList<>(Arrays.asList(data));
-
-        // Now that we have some dummy forecast data, create an ArrayAdapter.
-        // The ArrayAdapter will take data from a source (like our dummy forecast) and
-        // use it to populate the ListView it's attached to.
         mForecastAdapter =
                 new ArrayAdapter<String>(
                         getActivity(), // The current context (this activity)
                         R.layout.list_item_forecast, // The name of the layout ID.
                         R.id.List_item_forecast_textView, // The ID of the textview to populate.
-                        weekForecast);
+                       new ArrayList<String>());
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
@@ -100,8 +86,38 @@ public class ForecastFragment extends Fragment {
         ListView listView = (ListView) rootView.findViewById(R.id.ListView_forecast);
         listView.setAdapter(mForecastAdapter);
 
+        //add listener and toast
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+
+                String forecast = mForecastAdapter.getItem(position);
+                Intent intent = new Intent(getActivity(), DetailActivity.class)
+                        .putExtra(Intent.EXTRA_TEXT, forecast);
+                System.out.println("List");
+                startActivity(intent);
+            }
+        });
+
+
         return rootView;
     }
+
+    private void updateWeather() {
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = prefs.getString(getString(R.string.pref_location_key),
+                getString(R.string.pref_location_default));
+        weatherTask.execute(location);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
 
     public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
@@ -130,15 +146,17 @@ public class ForecastFragment extends Fragment {
             String forecastJsonStr = null;
             //uri variables for data (1)
             String format = "json";
-            String units = "imperial";
+            String units = "metric";
             int numDays = 7;
+            String Country="us"; // Add Country PARM
 
             try {
                 // Construct the URL for the OpenWeatherMap query
                 // Constant Variables to build uri (2)
                 final String FORECAST_BASE_URL =
                         "http://api.openweathermap.org/data/2.5/forecast/daily?";
-                final String QUERY_PARAM = "q";
+                final String QUERY_PARAM = "zip";
+                final String COUNTRY_PARM = "country"; // Add Country PARM
                 final String FORMAT_PARAM = "mode";
                 final String UNITS_PARAM = "units";
                 final String DAYS_PARAM = "cnt";
@@ -147,6 +165,7 @@ public class ForecastFragment extends Fragment {
                 //Build uri object (3)
                 Uri builtUri = Uri.parse(FORECAST_BASE_URL).buildUpon()
                         .appendQueryParameter(QUERY_PARAM, params[0])
+                        .appendQueryParameter(COUNTRY_PARM, Country) // Add Country PARM
                         .appendQueryParameter(FORMAT_PARAM, format)
                         .appendQueryParameter(UNITS_PARAM, units)
                         .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
@@ -254,6 +273,20 @@ public class ForecastFragment extends Fragment {
             dayTime = new Time();
 
             String[] resultStr = new String[numDays];
+
+            // Data is fetched in Celsous by default.
+            // If user prefer to see in Fahrenheit, convert the values here.
+            // we do this rather than fetching in Fahrenheit so that the user can
+            // change this option without us having re-fetch the data once
+            // we start storing the values in a database.
+
+            SharedPreferences sharedPrefs =
+                    PreferenceManager.getDefaultSharedPreferences(getActivity());
+
+            String unitType = sharedPrefs.getString(
+                    getString(R.string.pref_units_key),
+                    getString(R.string.pref_units_metric));
+
             for(int i = 0; i < weatherArray.length(); i++) {
                 // For now, using the format "Day, description, hi/low"
                 String day;
@@ -281,7 +314,7 @@ public class ForecastFragment extends Fragment {
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
 
-                highAndLow = formatHighLows(high, low);
+                highAndLow = formatHighLows(high, low, unitType);
                 resultStr[i] = day + " - " + description + " - " + highAndLow;
             }
             for (String s : resultStr){
@@ -301,8 +334,16 @@ public class ForecastFragment extends Fragment {
         /**
          * Prepare the weather high/lows for presentation.
          */
-        private String formatHighLows(double high, double low) {
+        private String formatHighLows(double high, double low, String unitType) {
             // For presentation, assume the user doesn't care about tenths of a degree.
+
+            if (unitType.equals(getString(R.string.pref_units_imperial))){
+                high = (high * 1.8) + 32;
+                low = (low * 1.8) + 32;
+            }else if (!unitType.equals(getString(R.string.pref_units_metric))){
+                Log.d(LOG_TAG, "Unit type not found:" + unitType);
+            }
+            // For presentation, assume the user doesn't care about tenths of degree
             long roundedHigh = Math.round(high);
             long roundedLow = Math.round(low);
 

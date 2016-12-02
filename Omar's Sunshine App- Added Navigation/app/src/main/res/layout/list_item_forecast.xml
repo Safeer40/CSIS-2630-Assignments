@@ -8,7 +8,7 @@
     android:minHeight="?android:attr/listPreferredItemHeight"
     android:gravity="center_vertical"
     android:id="@+id/List_item_forecast_textView"
-    android:textColor="?attr/colorPrimaryDark"
+    android:textColor="@android:color/white"
     android:textSize="24sp"
-    android:background="@color/button_material_light"
+    android:background="@android:color/holo_blue_dark"
     android:textStyle="bold"/>
